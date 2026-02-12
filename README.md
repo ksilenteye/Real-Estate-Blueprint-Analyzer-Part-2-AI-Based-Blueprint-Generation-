@@ -1,0 +1,71 @@
+ ┌─────────────────────────────────────────────────────────────┐
+ │                        USER DASHBOARD                       │
+ │   (Streamlit UI – Upload, Analyze, Furnish, Cost, Sell)     │ 
+ └─────────────────────────────────────────────────────────────┘ 
+                              │
+                              ▼
+ ┌─────────────────────────────────────────────────────────────┐  
+ │                     ORCHESTRATION LAYER                     │
+ │              (pipeline_core / controller.py)                │
+ └─────────────────────────────────────────────────────────────┘
+                              │
+          ────────────────────┼────────────────────
+                              │
+                              ▼
+ ┌──────────────────────────────────────────────────────────┐
+ │                 VISION PARSING ENGINE                    │
+ ├──────────────────────────────────────────────────────────┤
+ │  SAM → Room Segmentation                                 │
+ │  YOLO / Detectron2 → Room Classification                 │
+ │  OpenCV → Walls, Doors, Windows Extraction               │
+ └──────────────────────────────────────────────────────────┘
+  
+ ┌──────────────────────────────────────────────────────────┐
+ │                LAYOUT INTELLIGENCE ENGINE                │
+ ├──────────────────────────────────────────────────────────┤
+ │  Room Graph Builder                                      │
+ │  Adjacency Matrix                                        │
+ │  Circulation Analysis                                    │
+ │  Ventilation & Efficiency Scoring                        │
+ └──────────────────────────────────────────────────────────┘
+ ┌──────────────────────────────────────────────────────────┐
+ │               FURNITURE GENERATION ENGINE                │
+ ├──────────────────────────────────────────────────────────┤
+ │  Rule-Based Placement Logic                              │
+ │  Clearance & Constraint Checker                          │
+ │  Diffusion Model → Top-View Rendering  +                 │
+ |	                                                        │
+ |   add a realistic room img generated using diffusion     │
+ |  model(adnan proj) and by providing multiple empty       │
+ |	  room img with label kitchens, room(masterroom),       │
+ |	  room(kid), living room. model will choose based       │
+ |	  on data collected through   SAM → Room Segmentation   │ 
+ |	  , YOLO / Detectron2 → Room Classification             │
+ |	  OpenCV → Walls, Doors, Windows Extraction +           │
+ |	  top view of the the furnicher placed in room          │
+ |	  by diffusion model                  		              │
+ └──────────────────────────────────────────────────────────┘
+ ┌──────────────────────────────────────────────────────────┐
+ │                DESIGN RECOMMENDATION ENGINE              │
+ ├──────────────────────────────────────────────────────────┤
+ │  Space Optimization Rules                                │
+ │  Furniture Clearance Validation                          │
+ │  Ventilation & Lighting Warnings                         │
+ │  Budget Optimization Suggestions                         │
+ └──────────────────────────────────────────────────────────┘
+ ┌──────────────────────────────────────────────────────────┐
+ │                   COST ESTIMATION ENGINE                 │
+ ├──────────────────────────────────────────────────────────┤
+ │  Material Cost (Walls, Flooring, Paint)                  │
+ │  Labour Cost (Regional Rate DB)                          │
+ │  Furniture Cost Estimator                                │
+ │  Contingency & Margin Calculation                        │
+ └──────────────────────────────────────────────────────────┘
+ ┌──────────────────────────────────────────────────────────┐
+ │                 PROPERTY LISTING ENGINE                  │
+ ├──────────────────────────────────────────────────────────┤
+ │  AI Property Valuation                                   │
+ │  Auto Listing Description Generator                      │
+ │  Sellability Score + Future Selling price                │
+ │  Export / Publish Listing                                │
+ └──────────────────────────────────────────────────────────┘

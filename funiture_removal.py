@@ -1,75 +1,62 @@
-import cv2
-import numpy as np
-from pathlib import Path
-import json
-from tqdm import tqdm
+import os
+from lxml import etree
+import cairosvg
 
-class CubiCasaMasker:
-    def __init__(self,
-                 dataset_root="cubicasa5k/high_quality_architectural",
-                 output_root="cubicasa_processed"):
+INPUT_SVG = "C:\\Users\\max\\Desktop\\Real Estate Blueprint Analyzer\\cubicasa5k\\high_quality_architectural\\164\\model.svg"
+ORIGINAL_DIR = "original"
+MASKED_DIR = "masked"
 
-        self.dataset_root = Path(dataset_root)
-        self.output_root = Path(output_root)
+FURNITURE_CLASSES = [
+    "FixedFurniture",
+    "Sink",
+    "Closet",
+    "Toilet",
+    "Bathtub",
+    "Cabinet",
+    "Wardrobe"
+]
 
-        self.masked_dir = self.output_root / "masked"
-        self.original_dir = self.output_root / "original"
+FURNITURE_IDS = [
+    "FixedFurnitureSet"
+]
 
-        self.masked_dir.mkdir(parents=True, exist_ok=True)
-        self.original_dir.mkdir(parents=True, exist_ok=True)
+os.makedirs(ORIGINAL_DIR, exist_ok=True)
+os.makedirs(MASKED_DIR, exist_ok=True)
 
-    def mask_furniture(self, image):
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+original_png_path = os.path.join(ORIGINAL_DIR, "original.png")
+cairosvg.svg2png(url=INPUT_SVG, write_to=original_png_path)
+print(f"Original saved → {original_png_path}")
 
-        # Mask non-white, non-black areas (likely furniture)
-        furniture_mask = (gray > 30) & (gray < 220)
+parser = etree.XMLParser(remove_blank_text=True)
+tree = etree.parse(INPUT_SVG, parser)
+root = tree.getroot()
 
-        masked = image.copy()
-        masked[furniture_mask] = [255, 255, 255]
+# Extract namespace
+nsmap = root.nsmap.copy()
+ns = {"svg": nsmap.get(None)} if None in nsmap else {}
 
-        return masked
+for furniture_id in FURNITURE_IDS:
+    elements = root.xpath(f"//*[@id='{furniture_id}']", namespaces=ns)
+    for el in elements:
+        parent = el.getparent()
+        if parent is not None:
+            parent.remove(el)
 
-    def process(self):
-        metadata = []
-        idx = 0
+for cls in FURNITURE_CLASSES:
+    elements = root.xpath(f"//*[contains(@class, '{cls}')]", namespaces=ns)
+    for el in elements:
+        parent = el.getparent()
+        if parent is not None:
+            parent.remove(el)
 
-        for sample_dir in tqdm(sorted(self.dataset_root.iterdir())):
-            if not sample_dir.is_dir():
-                continue
 
-            # Find all scaled floor images
-            scaled_images = list(sample_dir.glob("*_scaled.png"))
+temp_svg = "temp_cleaned.svg"
+tree.write(temp_svg)
 
-            for img_path in scaled_images:
-                image = cv2.imread(str(img_path))
-                masked = self.mask_furniture(image)
+masked_png_path = os.path.join(MASKED_DIR, "masked.png")
+cairosvg.svg2png(url=temp_svg, write_to=masked_png_path)
+print(f"Masked saved → {masked_png_path}")
 
-                save_name = f"plan_{idx:05d}.png"
+os.remove(temp_svg)
 
-                masked_path = self.masked_dir / save_name
-                original_path = self.original_dir / save_name
-
-                cv2.imwrite(str(masked_path), masked)
-                cv2.imwrite(str(original_path), image)
-
-                metadata.append({
-                    "id": idx,
-                    "conditioning_image": str(masked_path),
-                    "target_image": str(original_path),
-                    "source_folder": sample_dir.name,
-                    "floor_image": img_path.name
-                })
-
-                idx += 1
-
-        with open(self.output_root / "metadata.json", "w") as f:
-            json.dump(metadata, f, indent=2)
-
-        print("Processing complete.")
-
-if __name__ == "__main__":
-    masker = CubiCasaMasker(
-        dataset_root="cubicasa5k/high_quality_architectural",
-        output_root="cubicasa_processed"
-    )
-    masker.process()
+print("Furniture removal completed successfully.")
